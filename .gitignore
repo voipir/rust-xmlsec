@@ -1,0 +1,13 @@
+#
+# Git Ignores
+#
+
+# Rust artifacts
+**/*.rs.bk
+
+Cargo.lock
+
+/target/
+
+# Editor and IDE environments
+.vscode/
