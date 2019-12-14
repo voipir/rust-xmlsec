@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+XML Security Library example: Simple signature template file for sign1 example.
+-->
+<Envelope xmlns="urn:envelope">
+  <Data>
+	Hello, World!
+  </Data>
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+      <Reference URI="">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+        <DigestValue>9H/rQr2Axe9hYTV2n/tCp+3UIQQ=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>dGFkTI9rSGv+/FXf78V+5P4pVoBX/xFacoHB0DlOOPM7p3EgHjMTH1DQVClEUaKY
+7bcalw6vbwf1zrcqG3drFAtjIFcSmeJbG7S5vpv3obLfYyycGuIUmMD31Rrv9anF
+GrFhiUhtV4AcP09ZxzA2GgJHGjJC+bNEgXVDw6HNUUk=</SignatureValue>
+    <KeyInfo>
+	<KeyName/>
+    </KeyInfo>
+  </Signature>
+</Envelope>
