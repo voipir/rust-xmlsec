@@ -12,6 +12,7 @@ This library aims at wrapping xmlsec1 and being interoperable with [rust-libxml]
 
 - XML encryption.
 - Key management (as in xmlsec key manager). Though the value of wrapping that should be debated first. It may be more sensible to lift that to pure Rust instead.
+- Dynamic selection of crypto backend.
 
 ## Contibuting
 
