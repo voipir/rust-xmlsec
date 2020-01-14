@@ -46,6 +46,8 @@ impl XmlSecKey
     /// decrypt/unlock.
     pub fn from_file(path: &str, format: XmlSecKeyFormat, password: Option<&str>) -> XmlSecResult<Self>
     {
+        // TODO deprecate internals for Rust read-from-file and then loading with `from_memory`
+
         crate::xmlsec::guarantee_xmlsec_init();
 
         // TODO proper sanitization/error handling of input
@@ -66,6 +68,45 @@ impl XmlSecKey
         }
 
         Ok(Self {0: key})
+    }
+
+    /// Load key from buffer in memory, specifying format and optionally the password required to decrypt/unlock.
+    pub fn from_memory(buffer: &[u8], format: XmlSecKeyFormat, password: Option<&str>) -> XmlSecResult<Self>
+    {
+        crate::xmlsec::guarantee_xmlsec_init();
+
+        // TODO proper sanitization/error handling of input
+        let cpasswd = password.map(|p| CString::new(p).unwrap());
+
+        // Load key from buffer
+        let key = unsafe { bindings::xmlSecOpenSSLAppKeyLoadMemory(
+            buffer.as_ptr(),
+            buffer.len() as u32,
+            format as u32,
+            if cpasswd.is_some() {cpasswd.unwrap().as_ptr()} else {null()},
+            null_mut(),
+            null_mut()
+        ) };
+
+        if key.is_null() {
+            return Err(XmlSecError::KeyLoadError);
+        }
+
+        Ok(Self {0: key})
+    }
+
+    /// Load certificate into key by specifying path and ints format.
+    pub fn load_cert_from_file(&self, path: &str, format: XmlSecKeyFormat) -> XmlSecResult<()>
+    {
+        let cpath = CString::new(path).unwrap();
+
+        let rc = unsafe { bindings::xmlSecOpenSSLAppKeyCertLoad(self.0, cpath.as_ptr(), format as u32) };
+
+        if rc != 0 {
+            return Err(XmlSecError::CertLoadError);
+        }
+
+        Ok(())
     }
 
     /// Set name of the key.

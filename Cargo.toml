@@ -1,6 +1,6 @@
 [package]
 name         = "xmlsec"
-version      = "0.1.0"
+version      = "0.1.1"
 authors      = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
 edition      = "2018"
 readme       = "README.md"
@@ -19,4 +19,4 @@ lazy_static = {version = "^1.4.0"}
 
 [build-dependencies]
 pkg-config = {version = "^0.3.17"}
-bindgen    = {version = "^0.52.0"}
+bindgen    = {version = "^0.51.0"}

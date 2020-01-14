@@ -14,6 +14,7 @@ pub enum XmlSecError
 {
     KeyNotLoaded,
     KeyLoadError,
+    CertLoadError,
 
     RootNotFound,
     NodeNotFound,
@@ -29,8 +30,9 @@ impl std::fmt::Display for XmlSecError
     {
         match self
         {
-            Self::KeyNotLoaded => write!(fmt, "{}", "Key has not yet been loaded and is required"),
-            Self::KeyLoadError => write!(fmt, "{}", "Failed to load key"),
+            Self::KeyNotLoaded  => write!(fmt, "{}", "Key has not yet been loaded and is required"),
+            Self::KeyLoadError  => write!(fmt, "{}", "Failed to load key"),
+            Self::CertLoadError => write!(fmt, "{}", "Failed to load certificate"),
 
             Self::RootNotFound => write!(fmt, "{}", "Failed to find document root"),
             Self::NodeNotFound => write!(fmt, "{}", "Failed to find node"),

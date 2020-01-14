@@ -22,6 +22,10 @@ fn test_template_creation()
     doc.template()
         .canonicalization(XmlSecCanonicalizationMethod::ExclusiveC14N)
         .signature(XmlSecSignatureMethod::RsaSha1)
+        .keyname(true)
+        .keyvalue(true)
+        .x509data(true)
+        .uri("ReferencedID")
         .done()
         .expect("Failed to build and attach signature");
 

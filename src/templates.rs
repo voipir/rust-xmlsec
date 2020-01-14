@@ -31,7 +31,16 @@ pub trait TemplateBuilder
     fn signature(self, sig: XmlSecSignatureMethod) -> Self;
 
     /// Sets signature subject node URI
-    fn id(self, id: &str) -> Self;
+    fn uri(self, uri: &str) -> Self;
+
+    /// Adds <ds:KeyName> to key information node
+    fn keyname(self, add: bool) -> Self;
+
+    /// Adds <ds:KeyValue> to key information node
+    fn keyvalue(self, add: bool) -> Self;
+
+    /// Adds <ds:X509Data> to key information node
+    fn x509data(self, add: bool) -> Self;
 
     /// Builds the actual template and returns
     fn done(self) -> XmlSecResult<()>;
@@ -63,7 +72,11 @@ struct TemplateOptions
     c14n: XmlSecCanonicalizationMethod,
     sig:  XmlSecSignatureMethod,
 
-    id: Option<String>,
+    uri: Option<String>,
+
+    keyname:  bool,
+    keyvalue: bool,
+    x509data: bool,
 }
 
 
@@ -74,7 +87,12 @@ impl Default for TemplateOptions
         Self {
             c14n: XmlSecCanonicalizationMethod::ExclusiveC14N,
             sig:  XmlSecSignatureMethod::RsaSha1,
-            id:   None
+
+            uri: None,
+
+            keyname:  false,
+            keyvalue: false,
+            x509data: false,
         }
     }
 }
@@ -105,15 +123,41 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
         self
     }
 
-    fn id(mut self, id: &str) -> Self
+    fn uri(mut self, uri: &str) -> Self
     {
-        self.options.id = Some(id.to_owned());
+        self.options.uri = Some(uri.to_owned());
+        self
+    }
+
+    fn keyname(mut self, add: bool) -> Self
+    {
+        self.options.keyname = add;
+        self
+    }
+
+    fn keyvalue(mut self, add: bool) -> Self
+    {
+        self.options.keyvalue = add;
+        self
+    }
+
+    fn x509data(mut self, add: bool) -> Self
+    {
+        self.options.x509data = add;
         self
     }
 
     fn done(self) -> XmlSecResult<()>
     {
-        let cid = self.options.id.map(|p| CString::new(p).unwrap());
+        let curi = {
+            if let Some(uri) = self.options.uri {
+                CString::new(uri).unwrap().into_raw() as *const c_uchar
+            } else {
+                null()
+            }
+        };
+
+        // let curi = self.options.uri.map(|p| CString::new(p).unwrap());
 
         let docptr = self.doc.doc_ptr() as *mut bindings::xmlDoc;
 
@@ -128,7 +172,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             docptr,
             self.options.c14n.to_method(),
             self.options.sig.to_method(),
-            if cid.is_some() {cid.unwrap().as_ptr() as *const c_uchar} else {null()}
+            null()
         ) };
 
         if signature.is_null() {
@@ -139,7 +183,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             signature,
             XmlSecSignatureMethod::Sha1.to_method(),
             null(),
-            null(),
+            curi,
             null()
         ) };
 
@@ -156,16 +200,41 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
         let keyinfo = unsafe { bindings::xmlSecTmplSignatureEnsureKeyInfo(signature, null()) };
 
         if keyinfo.is_null() {
-            panic!("Failed to add key info");
+            panic!("Failed to ensure key info");
         }
 
-        let keyname = unsafe { bindings::xmlSecTmplKeyInfoAddKeyName(keyinfo, null()) };
+        if self.options.keyname
+        {
+            let keyname = unsafe { bindings::xmlSecTmplKeyInfoAddKeyName(keyinfo, null()) };
 
-        if keyname.is_null() {
-            panic!("Failed to add key name");
+            if keyname.is_null() {
+                panic!("Failed to add key name");
+            }
+        }
+
+        if self.options.keyvalue
+        {
+            let keyvalue = unsafe { bindings::xmlSecTmplKeyInfoAddKeyValue(keyinfo) };
+
+            if keyvalue.is_null() {
+                panic!("Failed to add key value");
+            }
+        }
+
+        if self.options.x509data
+        {
+            let x509data = unsafe { bindings::xmlSecTmplKeyInfoAddX509Data(keyinfo) };
+
+            if x509data.is_null() {
+                panic!("Failed to add key value");
+            }
         }
 
         unsafe { bindings::xmlAddChild(rootptr, signature) };
+
+        if ! curi.is_null() {
+            unsafe { CString::from_raw(curi as *mut i8); }
+        }
 
         Ok(())
     }
