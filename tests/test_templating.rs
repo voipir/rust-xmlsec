@@ -34,5 +34,5 @@ fn test_template_creation()
         include_bytes!("./resources/sign2-tmpl.xml").to_vec()
     ).unwrap();
 
-    assert_eq!(doc.to_string(false), reference);
+    assert_eq!(doc.to_string(), reference);
 }

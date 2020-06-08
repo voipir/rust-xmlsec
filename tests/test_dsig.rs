@@ -64,7 +64,7 @@ fn test_signing_template()
         include_bytes!("./resources/sign1-res.xml").to_vec()
     ).unwrap();
 
-    assert_eq!(doc.to_string(false), reference);
+    assert_eq!(doc.to_string(), reference);
 }
 
 
