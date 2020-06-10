@@ -1,6 +1,6 @@
 [package]
 name         = "xmlsec"
-version      = "0.1.2"
+version      = "0.1.3"
 authors      = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
 edition      = "2018"
 readme       = "README.md"

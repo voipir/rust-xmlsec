@@ -4,6 +4,7 @@
 use xmlsec::XmlSecKey;
 use xmlsec::XmlSecKeyFormat;
 use xmlsec::XmlSecSignatureContext;
+use xmlsec::XmlSecDocumentExt;
 
 use libxml::parser::Parser as XmlParser;
 
@@ -41,18 +42,10 @@ fn test_dsig_key_setting()
 #[test]
 fn test_signing_template()
 {
-    // setup
-    let mut ctx = XmlSecSignatureContext::new();
+    let ctx = common_setup_context_and_key();
 
-    let key = XmlSecKey::from_file("tests/resources/key.pem", XmlSecKeyFormat::Pem, None)
-        .expect("Failed to properly load key for test");
-
-    ctx.insert_key(key);
-
-    // load and sign
-    let parser = XmlParser::default();
-
-    let doc = parser.parse_file("tests/resources/sign1-tmpl.xml")
+    let doc = XmlParser::default()
+        .parse_file("tests/resources/sign1-tmpl.xml")
         .expect("Failed to load signature template");
 
     if let Err(e) = ctx.sign_document(&doc) {
@@ -71,25 +64,17 @@ fn test_signing_template()
 #[test]
 fn test_verify_template_signature()
 {
-    // setup
-    let mut ctx = XmlSecSignatureContext::new();
+    let ctx = common_setup_context_and_key();
 
-    let key = XmlSecKey::from_file("tests/resources/key.pem", XmlSecKeyFormat::Pem, None)
-        .expect("Failed to properly load key for test");
-
-    ctx.insert_key(key);
-
-    // load and sign
-    let parser = XmlParser::default();
-
-    let doc = parser.parse_file("tests/resources/sign1-res.xml")
+    let doc = XmlParser::default()
+        .parse_file("tests/resources/sign1-res.xml")
         .expect("Failed to load signature for verification testing");
 
     match ctx.verify_document(&doc)
     {
         Ok(valid) => {
             if !valid {
-                panic!("Signature in testing ressources should have returned to be valid");
+                panic!("Signature in testing resources should have returned to be valid");
             }
         }
 
@@ -97,4 +82,44 @@ fn test_verify_template_signature()
             panic!(e)
         }
     }
+}
+
+
+#[test]
+fn test_verify_custom_id_signature()
+{
+    let ctx = common_setup_context_and_key();
+
+    let doc = XmlParser::default()
+        .parse_file("tests/resources/sign3-signed.xml")
+        .expect("Failed to load signature for verification testing");
+
+    doc.specify_idattr("//sig:Data", "ThisID", Some(&[("sig", "urn:envelope")]))
+        .expect("Unable to set 'ThisID' as the ID attribute name");
+
+    match ctx.verify_document(&doc)
+    {
+        Ok(valid) => {
+            if !valid {
+                panic!("Signature in testing resources should have returned to be valid");
+            }
+        }
+
+        Err(e) => {
+            panic!(format!("Failed while verify signature. Caused by: {}", e));
+        }
+    }
+}
+
+
+fn common_setup_context_and_key() -> XmlSecSignatureContext
+{
+   let mut ctx = XmlSecSignatureContext::new();
+
+   let key = XmlSecKey::from_file("tests/resources/key.pem", XmlSecKeyFormat::Pem, None)
+       .expect("Failed to properly load key for test");
+
+    ctx.insert_key(key);
+
+    ctx
 }

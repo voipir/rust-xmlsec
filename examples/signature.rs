@@ -11,6 +11,8 @@ use xmlsec::XmlSecKey;
 use xmlsec::XmlSecKeyFormat;
 use xmlsec::XmlSecSignatureContext;
 
+use xmlsec::XmlSecDocumentExt;
+
 use libxml::parser::Parser           as XmlParser;
 use libxml::tree::document::Document as XmlDocument;
 
@@ -58,6 +60,13 @@ fn verify_signature(doc: &XmlDocument)
 
     let mut sigctx = XmlSecSignatureContext::new();
     sigctx.insert_key(key);
+
+    // optionaly specify the attribute ID names in the nodes you are verifying
+    doc.specify_idattr("//prefix:DataNodes", "MyIDAttrName", Some(&[("prefix", "namespace")]))
+        .expect(
+            "Could not specify ID attr name. This error specifies whether no nodes where found \
+            or if there was an attr name collision."
+        );
 
     let valid = sigctx.verify_document(doc)
         .expect("Failed to verify document");

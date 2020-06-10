@@ -12,10 +12,13 @@ use lazy_static::lazy_static;
 pub use libxml::tree::node::Node as XmlNode;
 #[doc(hidden)]
 pub use libxml::tree::document::Document as XmlDocument;
+#[doc(hidden)]
+pub use libxml::xpath::Context as XmlXPathContext;
 
 // internals
 mod bindings;
 
+mod exts;
 mod keys;
 mod error;
 mod crypto;
@@ -25,6 +28,8 @@ mod templates;
 mod transforms;
 
 // exports
+pub use self::exts::XmlSecDocumentExt;
+
 pub use self::keys::XmlSecKey;
 pub use self::keys::XmlSecKeyFormat;
 
