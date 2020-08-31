@@ -1,11 +1,11 @@
 [package]
 name         = "xmlsec"
-version      = "0.1.3"
+version      = "0.2.0"
 authors      = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
 edition      = "2018"
 readme       = "README.md"
 license-file = "LICENSE"
-description  = "Wrapper for xmslec1 library"
+description  = "Wrapper for xmlsec1 library"
 homepage     = "https://github.com/voipir/rust-xmlsec"
 repository   = "https://github.com/voipir/rust-xmlsec"
 keywords     = ["xml", "xmlsec", "dsig"]
@@ -19,4 +19,4 @@ lazy_static = {version = "1.4"}
 
 [build-dependencies]
 pkg-config = {version = "0.3"}
-bindgen    = {version = "0.54.0"}
+bindgen    = {version = "0.55"}
