@@ -109,6 +109,25 @@ impl XmlSecKey
         Ok(())
     }
 
+    /// Load certificate into key by specifying buffer to its contents.
+    pub fn load_cert_from_memory(&self, buff: &[u8], format: XmlSecKeyFormat) -> XmlSecResult<()>
+    {
+        let rc = unsafe {
+            bindings::xmlSecOpenSSLAppKeyCertLoadMemory(
+                self.0,
+                buff.as_ptr(),
+                buff.len() as u32,
+                format as u32
+            )
+        };
+
+        if rc != 0 {
+            return Err(XmlSecError::CertLoadError);
+        }
+
+        Ok(())
+    }
+
     /// Set name of the key.
     pub fn set_name(&mut self, name: &str)
     {
