@@ -44,7 +44,7 @@ impl XmlSecSignatureContext
         let mut old = None;
 
         unsafe {
-            if (*self.ctx).signKey != null_mut() {
+            if ! (*self.ctx).signKey.is_null() {
                 old = Some(XmlSecKey::from_ptr((*self.ctx).signKey));
             }
 
@@ -58,7 +58,7 @@ impl XmlSecSignatureContext
     pub fn release_key(&mut self) -> Option<XmlSecKey>
     {
         unsafe {
-            if (*self.ctx).signKey == null_mut() {
+            if (*self.ctx).signKey.is_null() {
                 None
             } else {
                 let key = XmlSecKey::from_ptr((*self.ctx).signKey);
@@ -136,7 +136,7 @@ impl XmlSecSignatureContext
     fn key_is_set(&self) -> XmlSecResult<()>
     {
         unsafe {
-            if (*self.ctx).signKey != null_mut() {
+            if ! (*self.ctx).signKey.is_null() {
                 Ok(())
             } else {
                 Err(XmlSecError::KeyNotLoaded)

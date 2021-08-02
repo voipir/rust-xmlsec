@@ -5,6 +5,9 @@
 //!
 #![deny(missing_docs)]
 
+#![deny(clippy::all)]
+#![allow(clippy::new_without_default)]  // simply do not agree with this
+
 // imports
 use lazy_static::lazy_static;
 

@@ -25,7 +25,7 @@ impl XmlSecDocumentExt for XmlDocument
 {
     fn specify_idattr(&self, search: &str, idattr_name: &str, namespaces: Option<&[(&str, &str)]>) -> XmlSecResult<()>
     {
-        let xpath = XmlXPathContext::new(&self)
+        let xpath = XmlXPathContext::new(self)
             .expect("Should not have failed to build xpath context XML document");
 
         if let Some(nss) = namespaces
@@ -63,7 +63,7 @@ impl XmlSecDocumentExt for XmlDocument
 
                 let existing = unsafe { bindings::xmlGetID(docptr, cidptr) };
 
-                if existing == null_mut() {
+                if existing.is_null() {
                     unsafe { bindings::xmlAddID(null_mut(), docptr, cidptr, attrptr) };
                 } else if existing != attrptr {
                     return Err(format!("Error: duplicate ID attribute: {}", id).into());

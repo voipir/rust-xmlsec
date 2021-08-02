@@ -54,11 +54,14 @@ impl XmlSecKey
         let cpath   = CString::new(path).unwrap();
         let cpasswd = password.map(|p| CString::new(p).unwrap());
 
+        let cpasswd_ptr = cpasswd.map(|cstr| cstr.as_ptr())
+            .unwrap_or(null());
+
         // Load key from file
         let key = unsafe { bindings::xmlSecOpenSSLAppKeyLoad(
             cpath.as_ptr(),
             format as u32,
-            if cpasswd.is_some() {cpasswd.unwrap().as_ptr()} else {null()},
+            cpasswd_ptr,
             null_mut(),
             null_mut()
         ) };
@@ -78,12 +81,15 @@ impl XmlSecKey
         // TODO proper sanitization/error handling of input
         let cpasswd = password.map(|p| CString::new(p).unwrap());
 
+        let cpasswd_ptr = cpasswd.map(|cstr| cstr.as_ptr())
+            .unwrap_or(null());
+
         // Load key from buffer
         let key = unsafe { bindings::xmlSecOpenSSLAppKeyLoadMemory(
             buffer.as_ptr(),
             buffer.len() as u32,
             format as u32,
-            if cpasswd.is_some() {cpasswd.unwrap().as_ptr()} else {null()},
+            cpasswd_ptr,
             null_mut(),
             null_mut()
         ) };
@@ -152,6 +158,8 @@ impl XmlSecKey
         cname.to_str().unwrap()  // TODO proper error handling
     }
 
+    /// # Safety
+    ///
     /// Create from raw pointer to an underlying xmlsec key structure. Henceforth its lifetime will be managed by this
     /// object.
     pub unsafe fn from_ptr(ptr: *mut bindings::xmlSecKey) -> Self
@@ -159,12 +167,16 @@ impl XmlSecKey
         Self {0: ptr}
     }
 
+    /// # Safety
+    ///
     /// Returns a raw pointer to the underlying xmlsec structure.
     pub unsafe fn as_ptr(&self) -> *mut bindings::xmlSecKey
     {
         self.0
     }
 
+    /// # Safety
+    ///
     /// Leak the internal resource. This is needed by [`XmlSecSignatureContext`][sigctx], since xmlsec takes over the
     /// lifetime management of the underlying resource when setting it as the active key for signature signing or
     /// verification.

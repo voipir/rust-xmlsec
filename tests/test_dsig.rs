@@ -49,7 +49,7 @@ fn test_signing_template()
         .expect("Failed to load signature template");
 
     if let Err(e) = ctx.sign_document(&doc) {
-        panic!(e);
+        panic!("{}", e);
     }
 
     // compare signature results
@@ -79,7 +79,7 @@ fn test_verify_template_signature()
         }
 
         Err(e) => {
-            panic!(e)
+            panic!("{}", e)
         }
     }
 }
@@ -106,7 +106,7 @@ fn test_verify_custom_id_signature()
         }
 
         Err(e) => {
-            panic!(format!("Failed while verify signature. Caused by: {}", e));
+            panic!("Failed while verify signature. Caused by: {}", e);
         }
     }
 }
