@@ -19,8 +19,6 @@ pub use libxml::tree::document::Document as XmlDocument;
 pub use libxml::xpath::Context as XmlXPathContext;
 
 // internals
-mod bindings;
-
 mod exts;
 mod keys;
 mod error;
@@ -31,6 +29,8 @@ mod templates;
 mod transforms;
 
 // exports
+pub mod bindings;  // for external extending of this wrapper
+
 pub use self::exts::XmlSecDocumentExt;
 
 pub use self::keys::XmlSecKey;
