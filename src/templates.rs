@@ -169,16 +169,13 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             }
         };
 
-        // let curi = self.options.uri.map(|p| CString::new(p).unwrap());
-
         let docptr = self.doc.doc_ptr() as *mut bindings::xmlDoc;
 
-        let rootptr;
-        if let Some(root) = self.doc.get_root_element() {
-            rootptr = root.node_ptr() as *mut bindings::xmlNode;
+        let rootptr = if let Some(root) = self.doc.get_root_element() {
+            root.node_ptr() as *mut bindings::xmlNode
         } else {
             return Err(XmlSecError::RootNotFound);
-        }
+        };
 
         let signature = unsafe { bindings::xmlSecTmplSignatureCreateNsPref(
             docptr,
@@ -244,10 +241,6 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
         }
 
         unsafe { bindings::xmlAddChild(rootptr, signature) };
-
-        if !curi.is_null() {
-            unsafe { CString::from_raw(curi as *mut i8); }
-        }
 
         Ok(())
     }
