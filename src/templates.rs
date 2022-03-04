@@ -17,7 +17,8 @@ use std::ptr::null;
 
 /// Declaration of a template building API for other specific trait extensions
 /// on foreign XML objects.
-pub trait TemplateBuilder {
+pub trait TemplateBuilder
+{
     /// Sets canonicalization method. See: [`XmlSecCanonicalizationMethod`][c14n].
     ///
     /// [c14n]: ./transforms/enum.XmlSecCanonicalizationMethod.html
@@ -50,7 +51,8 @@ pub trait TemplateBuilder {
 /// Trait extension aimed at a concrete implementation for [`XmlDocument`][xmldoc]
 ///
 /// [xmldoc]: http://kwarc.github.io/rust-libxml/libxml/tree/document/struct.Document.html
-pub trait XmlDocumentTemplating<'d> {
+pub trait XmlDocumentTemplating<'d>
+{
     /// Return a template builder over current XmlDocument.
     fn template(&'d self) -> XmlDocumentTemplateBuilder<'d>;
 }
@@ -58,12 +60,14 @@ pub trait XmlDocumentTemplating<'d> {
 /// Concrete template builder for [`XmlDocument`][xmldoc]
 ///
 /// [xmldoc]: http://kwarc.github.io/rust-libxml/libxml/tree/document/struct.Document.html
-pub struct XmlDocumentTemplateBuilder<'d> {
+pub struct XmlDocumentTemplateBuilder<'d>
+{
     doc: &'d XmlDocument,
     options: TemplateOptions,
 }
 
-struct TemplateOptions {
+struct TemplateOptions
+{
     c14n: XmlSecCanonicalizationMethod,
     sig: XmlSecSignatureMethod,
 
@@ -76,8 +80,10 @@ struct TemplateOptions {
     x509data: bool,
 }
 
-impl Default for TemplateOptions {
-    fn default() -> Self {
+impl Default for TemplateOptions
+{
+    fn default() -> Self
+    {
         Self {
             c14n: XmlSecCanonicalizationMethod::ExclusiveC14N,
             sig: XmlSecSignatureMethod::RsaSha1,
@@ -92,8 +98,10 @@ impl Default for TemplateOptions {
     }
 }
 
-impl<'d> XmlDocumentTemplating<'d> for XmlDocument {
-    fn template(&'d self) -> XmlDocumentTemplateBuilder<'d> {
+impl<'d> XmlDocumentTemplating<'d> for XmlDocument
+{
+    fn template(&'d self) -> XmlDocumentTemplateBuilder<'d>
+    {
         crate::xmlsec::guarantee_xmlsec_init();
 
         XmlDocumentTemplateBuilder {
@@ -103,43 +111,52 @@ impl<'d> XmlDocumentTemplating<'d> for XmlDocument {
     }
 }
 
-impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d> {
-    fn canonicalization(mut self, c14n: XmlSecCanonicalizationMethod) -> Self {
+impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
+{
+    fn canonicalization(mut self, c14n: XmlSecCanonicalizationMethod) -> Self
+    {
         self.options.c14n = c14n;
         self
     }
 
-    fn signature(mut self, sig: XmlSecSignatureMethod) -> Self {
+    fn signature(mut self, sig: XmlSecSignatureMethod) -> Self
+    {
         self.options.sig = sig;
         self
     }
 
-    fn uri(mut self, uri: &str) -> Self {
+    fn uri(mut self, uri: &str) -> Self
+    {
         self.options.uri = Some(uri.to_owned());
         self
     }
 
-    fn ns_prefix(mut self, ns_prefix: &str) -> Self {
+    fn ns_prefix(mut self, ns_prefix: &str) -> Self
+    {
         self.options.ns_prefix = Some(ns_prefix.to_owned());
         self
     }
 
-    fn keyname(mut self, add: bool) -> Self {
+    fn keyname(mut self, add: bool) -> Self
+    {
         self.options.keyname = add;
         self
     }
 
-    fn keyvalue(mut self, add: bool) -> Self {
+    fn keyvalue(mut self, add: bool) -> Self
+    {
         self.options.keyvalue = add;
         self
     }
 
-    fn x509data(mut self, add: bool) -> Self {
+    fn x509data(mut self, add: bool) -> Self
+    {
         self.options.x509data = add;
         self
     }
 
-    fn done(self) -> XmlSecResult<()> {
+    fn done(self) -> XmlSecResult<()>
+    {
         let curi = {
             if let Some(uri) = self.options.uri {
                 CString::new(uri).unwrap().into_raw() as *const c_uchar
