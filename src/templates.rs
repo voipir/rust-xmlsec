@@ -69,13 +69,12 @@ pub struct XmlDocumentTemplateBuilder<'d>
 struct TemplateOptions
 {
     c14n: XmlSecCanonicalizationMethod,
-    sig: XmlSecSignatureMethod,
+    sig:  XmlSecSignatureMethod,
 
     ns_prefix: Option<String>,
+    uri:       Option<String>,
 
-    uri: Option<String>,
-
-    keyname: bool,
+    keyname:  bool,
     keyvalue: bool,
     x509data: bool,
 }
@@ -86,12 +85,12 @@ impl Default for TemplateOptions
     {
         Self {
             c14n: XmlSecCanonicalizationMethod::ExclusiveC14N,
-            sig: XmlSecSignatureMethod::RsaSha1,
+            sig:  XmlSecSignatureMethod::RsaSha1,
 
-            uri: None,
+            uri:       None,
             ns_prefix: None,
 
-            keyname: false,
+            keyname:  false,
             keyvalue: false,
             x509data: false,
         }
@@ -104,10 +103,7 @@ impl<'d> XmlDocumentTemplating<'d> for XmlDocument
     {
         crate::xmlsec::guarantee_xmlsec_init();
 
-        XmlDocumentTemplateBuilder {
-            doc: self,
-            options: TemplateOptions::default(),
-        }
+        XmlDocumentTemplateBuilder {doc: self, options: TemplateOptions::default()}
     }
 }
 
@@ -184,8 +180,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             return Err(XmlSecError::RootNotFound);
         }
 
-        let signature = unsafe {
-            bindings::xmlSecTmplSignatureCreateNsPref(
+        let signature = unsafe { bindings::xmlSecTmplSignatureCreateNsPref(
                 docptr,
                 self.options.c14n.to_method(),
                 self.options.sig.to_method(),
@@ -198,8 +193,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             panic!("Failed to create signature template");
         }
 
-        let reference = unsafe {
-            bindings::xmlSecTmplSignatureAddReference(
+        let reference = unsafe { bindings::xmlSecTmplSignatureAddReference(
                 signature,
                 XmlSecSignatureMethod::Sha1.to_method(),
                 null(),
@@ -212,12 +206,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             panic!("Failed to add enveloped transform to reference");
         }
 
-        let envelope = unsafe {
-            bindings::xmlSecTmplReferenceAddTransform(
-                reference,
-                bindings::xmlSecTransformEnvelopedGetKlass(),
-            )
-        };
+        let envelope = unsafe { bindings::xmlSecTmplReferenceAddTransform(reference, bindings::xmlSecTransformEnvelopedGetKlass()) };
 
         if envelope.is_null() {
             panic!("Failed to add enveloped transform")
@@ -256,9 +245,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
         unsafe { bindings::xmlAddChild(rootptr, signature) };
 
         if !curi.is_null() {
-            unsafe {
-                CString::from_raw(curi as *mut i8);
-            }
+            unsafe { CString::from_raw(curi as *mut i8); }
         }
 
         Ok(())
