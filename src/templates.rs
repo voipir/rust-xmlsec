@@ -12,9 +12,8 @@ use crate::XmlSecError;
 use crate::XmlSecResult;
 
 use std::ffi::CString;
-use std::ptr::null;
 use std::os::raw::c_uchar;
-
+use std::ptr::null;
 
 /// Declaration of a template building API for other specific trait extensions
 /// on foreign XML objects.
@@ -33,6 +32,9 @@ pub trait TemplateBuilder
     /// Sets signature subject node URI
     fn uri(self, uri: &str) -> Self;
 
+    /// the namespace prefix for the signature element (e.g. "dsig")
+    fn ns_prefix(self, ns_prefix: &str) -> Self;
+
     /// Adds <ds:KeyName> to key information node
     fn keyname(self, add: bool) -> Self;
 
@@ -46,7 +48,6 @@ pub trait TemplateBuilder
     fn done(self) -> XmlSecResult<()>;
 }
 
-
 /// Trait extension aimed at a concrete implementation for [`XmlDocument`][xmldoc]
 ///
 /// [xmldoc]: http://kwarc.github.io/rust-libxml/libxml/tree/document/struct.Document.html
@@ -55,7 +56,6 @@ pub trait XmlDocumentTemplating<'d>
     /// Return a template builder over current XmlDocument.
     fn template(&'d self) -> XmlDocumentTemplateBuilder<'d>;
 }
-
 
 /// Concrete template builder for [`XmlDocument`][xmldoc]
 ///
@@ -66,19 +66,18 @@ pub struct XmlDocumentTemplateBuilder<'d>
     options: TemplateOptions,
 }
 
-
 struct TemplateOptions
 {
     c14n: XmlSecCanonicalizationMethod,
     sig:  XmlSecSignatureMethod,
 
-    uri: Option<String>,
+    ns_prefix: Option<String>,
+    uri:       Option<String>,
 
     keyname:  bool,
     keyvalue: bool,
     x509data: bool,
 }
-
 
 impl Default for TemplateOptions
 {
@@ -88,7 +87,8 @@ impl Default for TemplateOptions
             c14n: XmlSecCanonicalizationMethod::ExclusiveC14N,
             sig:  XmlSecSignatureMethod::RsaSha1,
 
-            uri: None,
+            uri:       None,
+            ns_prefix: None,
 
             keyname:  false,
             keyvalue: false,
@@ -96,7 +96,6 @@ impl Default for TemplateOptions
         }
     }
 }
-
 
 impl<'d> XmlDocumentTemplating<'d> for XmlDocument
 {
@@ -107,7 +106,6 @@ impl<'d> XmlDocumentTemplating<'d> for XmlDocument
         XmlDocumentTemplateBuilder {doc: self, options: TemplateOptions::default()}
     }
 }
-
 
 impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
 {
@@ -126,6 +124,12 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
     fn uri(mut self, uri: &str) -> Self
     {
         self.options.uri = Some(uri.to_owned());
+        self
+    }
+
+    fn ns_prefix(mut self, ns_prefix: &str) -> Self
+    {
+        self.options.ns_prefix = Some(ns_prefix.to_owned());
         self
     }
 
@@ -157,6 +161,14 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             }
         };
 
+        let c_ns_prefix = {
+            if let Some(ns_prefix) = self.options.ns_prefix {
+                CString::new(ns_prefix).unwrap().into_raw() as *const c_uchar
+            } else {
+                null()
+            }
+        };
+
         // let curi = self.options.uri.map(|p| CString::new(p).unwrap());
 
         let docptr = self.doc.doc_ptr() as *mut bindings::xmlDoc;
@@ -168,11 +180,12 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             return Err(XmlSecError::RootNotFound);
         }
 
-        let signature = unsafe { bindings::xmlSecTmplSignatureCreate(
+        let signature = unsafe { bindings::xmlSecTmplSignatureCreateNsPref(
             docptr,
             self.options.c14n.to_method(),
             self.options.sig.to_method(),
-            null()
+            null(),
+            c_ns_prefix,
         ) };
 
         if signature.is_null() {
@@ -184,7 +197,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             XmlSecSignatureMethod::Sha1.to_method(),
             null(),
             curi,
-            null()
+            null(),
         ) };
 
         if reference.is_null() {
@@ -232,7 +245,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
 
         unsafe { bindings::xmlAddChild(rootptr, signature) };
 
-        if ! curi.is_null() {
+        if !curi.is_null() {
             unsafe { CString::from_raw(curi as *mut i8); }
         }
 
