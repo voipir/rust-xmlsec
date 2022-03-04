@@ -62,7 +62,7 @@ pub trait XmlDocumentTemplating<'d>
 /// [xmldoc]: http://kwarc.github.io/rust-libxml/libxml/tree/document/struct.Document.html
 pub struct XmlDocumentTemplateBuilder<'d>
 {
-    doc: &'d XmlDocument,
+    doc:     &'d XmlDocument,
     options: TemplateOptions,
 }
 
@@ -181,26 +181,24 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
         }
 
         let signature = unsafe { bindings::xmlSecTmplSignatureCreateNsPref(
-                docptr,
-                self.options.c14n.to_method(),
-                self.options.sig.to_method(),
-                null(),
-                c_ns_prefix,
-            )
-        };
+            docptr,
+            self.options.c14n.to_method(),
+            self.options.sig.to_method(),
+            null(),
+            c_ns_prefix,
+        ) };
 
         if signature.is_null() {
             panic!("Failed to create signature template");
         }
 
         let reference = unsafe { bindings::xmlSecTmplSignatureAddReference(
-                signature,
-                XmlSecSignatureMethod::Sha1.to_method(),
-                null(),
-                curi,
-                null(),
-            )
-        };
+            signature,
+            XmlSecSignatureMethod::Sha1.to_method(),
+            null(),
+            curi,
+            null(),
+        ) };
 
         if reference.is_null() {
             panic!("Failed to add enveloped transform to reference");
@@ -218,7 +216,8 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             panic!("Failed to ensure key info");
         }
 
-        if self.options.keyname {
+        if self.options.keyname
+        {
             let keyname = unsafe { bindings::xmlSecTmplKeyInfoAddKeyName(keyinfo, null()) };
 
             if keyname.is_null() {
@@ -226,7 +225,8 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             }
         }
 
-        if self.options.keyvalue {
+        if self.options.keyvalue
+        {
             let keyvalue = unsafe { bindings::xmlSecTmplKeyInfoAddKeyValue(keyinfo) };
 
             if keyvalue.is_null() {
@@ -234,7 +234,8 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
             }
         }
 
-        if self.options.x509data {
+        if self.options.x509data
+        {
             let x509data = unsafe { bindings::xmlSecTmplKeyInfoAddX509Data(keyinfo) };
 
             if x509data.is_null() {
