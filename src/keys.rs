@@ -70,7 +70,7 @@ impl XmlSecKey
             return Err(XmlSecError::KeyLoadError);
         }
 
-        Ok(Self {0: key})
+        Ok(Self(key))
     }
 
     /// Load key from buffer in memory, specifying format and optionally the password required to decrypt/unlock.
@@ -98,7 +98,7 @@ impl XmlSecKey
             return Err(XmlSecError::KeyLoadError);
         }
 
-        Ok(Self {0: key})
+        Ok(Self(key))
     }
 
     /// Load certificate into key by specifying path and ints format.
@@ -164,7 +164,7 @@ impl XmlSecKey
     /// object.
     pub unsafe fn from_ptr(ptr: *mut bindings::xmlSecKey) -> Self
     {
-        Self {0: ptr}
+        Self(ptr)
     }
 
     /// # Safety
@@ -211,7 +211,7 @@ impl Clone for XmlSecKey
     {
         let new = unsafe { bindings::xmlSecKeyDuplicate(self.0) };
 
-        Self {0: new}
+        Self(new)
     }
 }
 
