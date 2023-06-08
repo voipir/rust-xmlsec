@@ -35,7 +35,6 @@ fn main()
             .clang_args(fetch_xmlsec_config_flags())
             .clang_args(fetch_xmlsec_config_libs())
             .layout_tests(true)
-            .rustfmt_bindings(true)
             .generate_comments(true);
 
         let bindings = bindbuild.generate()
