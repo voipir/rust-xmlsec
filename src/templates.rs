@@ -29,6 +29,12 @@ pub trait TemplateBuilder
     /// [sig]: ./crypto/openssl/enum.XmlSecSignatureMethod.html
     fn signature(self, sig: XmlSecSignatureMethod) -> Self;
 
+    /// Sets cryptographic signature method of `<dsig:Reference/>. See:
+    /// [`XmlSecSignatureMethod`][sig].
+    ///
+    /// [sig]: ./crypto/openssl/enum.XmlSecSignatureMethod.html
+    fn reference_signature(self, sig: XmlSecSignatureMethod) -> Self;
+
     /// Sets signature subject node URI
     fn uri(self, uri: &str) -> Self;
 
@@ -70,6 +76,7 @@ struct TemplateOptions
 {
     c14n: XmlSecCanonicalizationMethod,
     sig:  XmlSecSignatureMethod,
+    reference_sig: XmlSecSignatureMethod,
 
     ns_prefix: Option<String>,
     uri:       Option<String>,
@@ -86,6 +93,7 @@ impl Default for TemplateOptions
         Self {
             c14n: XmlSecCanonicalizationMethod::ExclusiveC14N,
             sig:  XmlSecSignatureMethod::RsaSha1,
+            reference_sig: XmlSecSignatureMethod::Sha1,
 
             uri:       None,
             ns_prefix: None,
@@ -118,6 +126,12 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
     fn signature(mut self, sig: XmlSecSignatureMethod) -> Self
     {
         self.options.sig = sig;
+        self
+    }
+
+    fn reference_signature(mut self, sig: XmlSecSignatureMethod) -> Self
+    {
+        self.options.reference_sig = sig;
         self
     }
 
@@ -191,7 +205,7 @@ impl<'d> TemplateBuilder for XmlDocumentTemplateBuilder<'d>
 
         let reference = unsafe { bindings::xmlSecTmplSignatureAddReference(
             signature,
-            XmlSecSignatureMethod::Sha1.to_method(),
+            self.options.reference_sig.to_method(),
             null(),
             curi,
             null(),
