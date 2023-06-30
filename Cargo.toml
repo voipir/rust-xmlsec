@@ -2,7 +2,7 @@
 name         = "xmlsec"
 version      = "0.2.2"
 authors      = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
-edition      = "2018"
+edition      = "2021"
 readme       = "README.md"
 license      = "MIT"
 description  = "Wrapper for xmlsec1 library"
