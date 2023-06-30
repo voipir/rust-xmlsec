@@ -11,6 +11,7 @@ use crate::XmlNode;
 use crate::XmlDocument;
 
 use std::os::raw::c_uchar;
+use std::mem::forget;
 use std::ptr::null_mut;
 
 
@@ -128,6 +129,28 @@ impl XmlSecSignatureContext
 
         self.verify_node_raw(sig)
     }
+
+    /// # Safety
+    ///
+    /// Returns a raw pointer to the underlying xmlsec signature context. Beware that it is still managed by this
+    /// wrapping object and will be deallocated once `self` gets dropped.
+    pub unsafe fn as_ptr(&self) -> *mut bindings::xmlSecDSigCtx
+    {
+        self.ctx
+    }
+
+    /// # Safety
+    ///
+    /// Returns a raw pointer to the underlying xmlsec signature context. Beware that it will be forgotten by this
+    /// wrapping object and *must* be deallocated manually by the callee.
+    pub unsafe fn into_ptr(self) -> *mut bindings::xmlSecDSigCtx
+    {
+        let ctx = self.ctx;  // keep a copy of the pointer
+
+        forget(self);  // release our copy of the pointer without deallocating it
+
+        ctx  // return the only remaining copy
+    }
 }
 
 
@@ -182,7 +205,6 @@ impl Drop for XmlSecSignatureContext
         unsafe { bindings::xmlSecDSigCtxDestroy(self.ctx) };
     }
 }
-
 
 
 fn find_root(doc: &XmlDocument) -> XmlSecResult<*mut bindings::xmlNode>
