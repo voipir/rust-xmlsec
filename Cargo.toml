@@ -19,4 +19,4 @@ lazy_static = {version = "^1.4"}
 
 [build-dependencies]
 pkg-config = {version = "^0.3"}
-bindgen    = {version = "^0.59"}
+bindgen    = {version = "^0.65"}

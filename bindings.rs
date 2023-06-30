@@ -1,7 +1,8 @@
 //!
 //! XmlSec Bindings Generation
 //!
-use bindgen::Builder as BindgenBuilder;
+use bindgen::Builder   as BindgenBuilder;
+use bindgen::Formatter as BindgenFormatter;
 
 use pkg_config::Config as PkgConfig;
 
@@ -35,7 +36,7 @@ fn main()
             .clang_args(fetch_xmlsec_config_flags())
             .clang_args(fetch_xmlsec_config_libs())
             .layout_tests(true)
-            .rustfmt_bindings(true)
+            .formatter(BindgenFormatter::default())
             .generate_comments(true);
 
         let bindings = bindbuild.generate()
