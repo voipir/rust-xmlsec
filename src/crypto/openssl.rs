@@ -11,9 +11,12 @@ pub enum XmlSecSignatureMethod
     Aes128Cbc,
     Aes192Cbc,
     Aes256Cbc,
-    // Aes128Gcm,
-    // Aes192Gcm,
-    // Aes256Gcm,
+    #[cfg(feature = "AesGcm")]
+    Aes128Gcm,
+    #[cfg(feature = "AesGcm")]
+    Aes192Gcm,
+    #[cfg(feature = "AesGcm")]
+    Aes256Gcm,
     KWAes128,
     KWAes192,
     KWAes256,
@@ -26,6 +29,7 @@ pub enum XmlSecSignatureMethod
     EcdsaSha256,
     EcdsaSha384,
     EcdsaSha512,
+    #[cfg(feature = "MD5")]
     HmacMd5,
     HmacRipemd160,
     HmacSha1,
@@ -33,8 +37,10 @@ pub enum XmlSecSignatureMethod
     HmacSha256,
     HmacSha384,
     HmacSha512,
+    #[cfg(feature = "MD5")]
     Md5,
     Ripemd160,
+    #[cfg(feature = "MD5")]
     RsaMd5,
     RsaRipemd160,
     RsaSha1,
@@ -62,9 +68,12 @@ impl XmlSecSignatureMethod
             Self::Aes128Cbc     => unsafe { bindings::xmlSecOpenSSLTransformAes128CbcGetKlass() },
             Self::Aes192Cbc     => unsafe { bindings::xmlSecOpenSSLTransformAes192CbcGetKlass() },
             Self::Aes256Cbc     => unsafe { bindings::xmlSecOpenSSLTransformAes256CbcGetKlass() },
-            // Self::Aes128Gcm     => unsafe { bindings::xmlSecOpenSSLTransformAes128GcmGetKlass() },
-            // Self::Aes192Gcm     => unsafe { bindings::xmlSecOpenSSLTransformAes192GcmGetKlass() },
-            // Self::Aes256Gcm     => unsafe { bindings::xmlSecOpenSSLTransformAes256GcmGetKlass() },
+            #[cfg(feature = "AesGcm")]
+            Self::Aes128Gcm     => unsafe { bindings::xmlSecOpenSSLTransformAes128GcmGetKlass() },
+            #[cfg(feature = "AesGcm")]
+            Self::Aes192Gcm     => unsafe { bindings::xmlSecOpenSSLTransformAes192GcmGetKlass() },
+            #[cfg(feature = "AesGcm")]
+            Self::Aes256Gcm     => unsafe { bindings::xmlSecOpenSSLTransformAes256GcmGetKlass() },
             Self::KWAes128      => unsafe { bindings::xmlSecOpenSSLTransformKWAes128GetKlass() },
             Self::KWAes192      => unsafe { bindings::xmlSecOpenSSLTransformKWAes192GetKlass() },
             Self::KWAes256      => unsafe { bindings::xmlSecOpenSSLTransformKWAes256GetKlass() },
@@ -77,6 +86,7 @@ impl XmlSecSignatureMethod
             Self::EcdsaSha256   => unsafe { bindings::xmlSecOpenSSLTransformEcdsaSha256GetKlass() },
             Self::EcdsaSha384   => unsafe { bindings::xmlSecOpenSSLTransformEcdsaSha384GetKlass() },
             Self::EcdsaSha512   => unsafe { bindings::xmlSecOpenSSLTransformEcdsaSha512GetKlass() },
+            #[cfg(feature = "MD5")]
             Self::HmacMd5       => unsafe { bindings::xmlSecOpenSSLTransformHmacMd5GetKlass() },
             Self::HmacRipemd160 => unsafe { bindings::xmlSecOpenSSLTransformHmacRipemd160GetKlass() },
             Self::HmacSha1      => unsafe { bindings::xmlSecOpenSSLTransformHmacSha1GetKlass() },
@@ -84,8 +94,10 @@ impl XmlSecSignatureMethod
             Self::HmacSha256    => unsafe { bindings::xmlSecOpenSSLTransformHmacSha256GetKlass() },
             Self::HmacSha384    => unsafe { bindings::xmlSecOpenSSLTransformHmacSha384GetKlass() },
             Self::HmacSha512    => unsafe { bindings::xmlSecOpenSSLTransformHmacSha512GetKlass() },
+            #[cfg(feature = "MD5")]
             Self::Md5           => unsafe { bindings::xmlSecOpenSSLTransformMd5GetKlass() },
             Self::Ripemd160     => unsafe { bindings::xmlSecOpenSSLTransformRipemd160GetKlass() },
+            #[cfg(feature = "MD5")]
             Self::RsaMd5        => unsafe { bindings::xmlSecOpenSSLTransformRsaMd5GetKlass() },
             Self::RsaRipemd160  => unsafe { bindings::xmlSecOpenSSLTransformRsaRipemd160GetKlass() },
             Self::RsaSha1       => unsafe { bindings::xmlSecOpenSSLTransformRsaSha1GetKlass() },
