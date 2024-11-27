@@ -44,6 +44,7 @@ impl XmlSecKey
 {
     /// Load key from file by specifying path, its format in the file, and optionally the password required to
     /// decrypt/unlock.
+    #[cfg(feature = "xmlSecOpenSSLAppKeyLoad")]
     pub fn from_file(path: &str, format: XmlSecKeyFormat, password: Option<&str>) -> XmlSecResult<Self>
     {
         // TODO deprecate internals for Rust read-from-file and then loading with `from_memory`
@@ -73,6 +74,36 @@ impl XmlSecKey
         Ok(Self(key))
     }
 
+    #[cfg(feature = "xmlSecOpenSSLAppKeyLoadEx")]
+    pub fn from_file(path: &str, format: XmlSecKeyDataType, password: Option<&str>) -> XmlSecResult<Self>
+    {
+        // TODO deprecate internals for Rust read-from-file and then loading with `from_memory`
+
+        crate::xmlsec::guarantee_xmlsec_init();
+
+        // TODO proper sanitization/error handling of input
+        let cpath   = CString::new(path).unwrap();
+        let cpasswd = password.map(|p| CString::new(p).unwrap());
+
+        let cpasswd_ptr = cpasswd.map(|cstr| cstr.as_ptr())
+            .unwrap_or(null());
+
+        // Load key from file
+        let key = unsafe { bindings::xmlSecOpenSSLAppKeyLoadEx(
+            cpath.as_ptr(),
+            format as u32,
+            cpasswd_ptr,
+            null_mut(),
+            null_mut()
+        ) };
+
+        if key.is_null() {
+            return Err(XmlSecError::KeyLoadError);
+        }
+
+        Ok(Self(key))
+    }
+
     /// Load key from buffer in memory, specifying format and optionally the password required to decrypt/unlock.
     pub fn from_memory(buffer: &[u8], format: XmlSecKeyFormat, password: Option<&str>) -> XmlSecResult<Self>
     {
@@ -87,7 +118,7 @@ impl XmlSecKey
         // Load key from buffer
         let key = unsafe { bindings::xmlSecOpenSSLAppKeyLoadMemory(
             buffer.as_ptr(),
-            buffer.len() as u32,
+            (buffer.len() as u32).try_into().unwrap(),
             format as u32,
             cpasswd_ptr,
             null_mut(),
@@ -122,7 +153,7 @@ impl XmlSecKey
             bindings::xmlSecOpenSSLAppKeyCertLoadMemory(
                 self.0,
                 buff.as_ptr(),
-                buff.len() as u32,
+                (buff.len() as u32).try_into().unwrap(),
                 format as u32
             )
         };

@@ -24,3 +24,5 @@ bindgen    = {version = "^0.70"}
 [features]
 MD5 = []
 AesGcm = []
+xmlSecOpenSSLAppKeyLoad = []
+xmlSecOpenSSLAppKeyLoadEx = []
