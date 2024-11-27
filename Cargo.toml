@@ -19,4 +19,10 @@ lazy_static = {version = "^1.4"}
 
 [build-dependencies]
 pkg-config = {version = "^0.3"}
-bindgen    = {version = "^0.65"}
+bindgen    = {version = "^0.70"}
+
+[features]
+MD5 = []
+AesGcm = []
+xmlSecOpenSSLAppKeyLoad = []
+xmlSecOpenSSLAppKeyLoadEx = []
