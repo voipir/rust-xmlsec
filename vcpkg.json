@@ -1,0 +1,10 @@
+{
+  "builtin-baseline": "1faad557cd7435901d7eac7b0b7f38e3e865701c",
+  "dependencies": ["libxslt", "xmlsec"],
+  "overrides": [
+    {
+      "name": "xmlsec",
+      "version": "1.2.37"
+    }
+  ]
+}

@@ -1,85 +1,94 @@
 //!
 //! XmlSec Bindings Generation
 //!
-use bindgen::Builder   as BindgenBuilder;
+use bindgen::Builder as BindgenBuilder;
 use bindgen::Formatter as BindgenFormatter;
 
-use pkg_config::Config as PkgConfig;
-
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
-use std::process::Command;
-
 
 const BINDINGS: &str = "bindings.rs";
 
+fn main() {
+    let dependencies = locate_and_link_dependencies();
 
-fn main()
-{
-    println!("cargo:rustc-link-lib=xmlsec1-openssl");  // -lxmlsec1-openssl
-    println!("cargo:rustc-link-lib=xmlsec1");          // -lxmlsec1
-    println!("cargo:rustc-link-lib=xml2");             // -lxml2
-    println!("cargo:rustc-link-lib=ssl");              // -lssl
-    println!("cargo:rustc-link-lib=crypto");           // -lcrypto
-
-    let path_out      = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let path_out = PathBuf::from(env::var("OUT_DIR").unwrap());
     let path_bindings = path_out.join(BINDINGS);
 
-    if !path_bindings.exists()
-    {
-        PkgConfig::new()
-            .probe("xmlsec1")
-            .expect("Could not find xmlsec1 using pkg-config");
-
+    if !path_bindings.exists() {
         let bindbuild = BindgenBuilder::default()
             .header("bindings.h")
-            .clang_args(fetch_xmlsec_config_flags())
-            .clang_args(fetch_xmlsec_config_libs())
+            .allowlist_type("xml.*")
+            .allowlist_function("xml.*")
+            .allowlist_var("xml.*")
+            .clang_args(dependencies.clang_args())
             .layout_tests(true)
             .formatter(BindgenFormatter::default())
             .generate_comments(true);
 
-        let bindings = bindbuild.generate()
-            .expect("Unable to generate bindings");
+        let bindings = bindbuild.generate().expect("Unable to generate bindings");
 
-        bindings.write_to_file(path_bindings)
+        bindings
+            .write_to_file(path_bindings)
             .expect("Couldn't write bindings!");
     }
 }
 
-
-fn fetch_xmlsec_config_flags() -> Vec<String>
-{
-    let out = Command::new("xmlsec1-config")
-        .arg("--cflags")
-        .output()
-        .expect("Failed to get --cflags from xmlsec1-config. Is xmlsec1 installed?")
-        .stdout;
-
-    args_from_output(out)
+struct LocatedDependencies {
+    include_paths: Vec<PathBuf>,
+    defines: HashMap<String, Option<String>>,
 }
 
-
-fn fetch_xmlsec_config_libs() -> Vec<String>
-{
-    let out = Command::new("xmlsec1-config")
-        .arg("--libs")
-        .output()
-        .expect("Failed to get --libs from xmlsec1-config. Is xmlsec1 installed?")
-        .stdout;
-
-    args_from_output(out)
+impl LocatedDependencies {
+    fn clang_args(&self) -> Vec<String> {
+        let mut result = Vec::new();
+        for include_path in &self.include_paths {
+            result.push(format!("-I{}", include_path.display()));
+        }
+        for (define, value) in &self.defines {
+            match value {
+                Some(value) => result.push(format!("-D{}={}", define, value)),
+                None => result.push(format!("-D{}", define)),
+            }
+        }
+        result
+    }
 }
 
+#[cfg(not(windows))]
+fn locate_and_link_dependencies() -> LocatedDependencies {
+    let library =
+        pkg_config::probe_library("xmlsec1").expect("Could not find xmlsec1 using pkg-config");
 
-fn args_from_output(args: Vec<u8>) -> Vec<String>
-{
-    let decoded = String::from_utf8(args)
-        .expect("Got invalid UTF8 from xmlsec1-config");
+    LocatedDependencies {
+        include_paths: library.include_paths,
+        defines: library.defines,
+    }
+}
 
-    let args = decoded.split_whitespace()
-        .map(|p| p.to_owned())
-        .collect::<Vec<String>>();
+#[cfg(windows)]
+fn locate_and_link_dependencies() -> LocatedDependencies {
+    let library =
+        vcpkg::find_package("xmlsec").expect("Failed to find xmlsec using vcpkg. Is it installed?");
 
-    args
+    println!("cargo:rustc-link-lib=crypt32");
+    println!("cargo:rustc-link-lib=user32");
+    println!("cargo:rustc-link-lib=bcrypt");
+
+    // vcpkg does not provide the defines, so we have to provide them ourselves
+    // -DXMLSEC_DL_LIBLTDL=1 -DXMLSEC_CRYPTO_OPENSSL=1
+    let mut defines = HashMap::new();
+    defines.insert("__XMLSEC_FUNCTION__".into(), Some("__func__".into()));
+    defines.insert("XMLSEC_NO_SIZE_T".into(), None);
+    defines.insert("XMLSEC_DL_LIBLTDL".into(), Some("1".into()));
+    defines.insert("XMLSEC_CRYPTO_OPENSSL".into(), Some("1".into()));
+    defines.insert("XMLSEC_NO_CRYPTO_DYNAMIC_LOADING".into(), Some("1".into()));
+    defines.insert("XMLSEC_NO_GOST".into(), Some("1".into()));
+    defines.insert("XMLSEC_NO_GOST2012".into(), Some("1".into()));
+
+    LocatedDependencies {
+        include_paths: library.include_paths,
+        defines,
+    }
 }
