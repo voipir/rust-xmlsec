@@ -11,3 +11,5 @@ Cargo.lock
 
 # Editor and IDE environments
 .vscode/
+/target-wsl
+/vcpkg_installed

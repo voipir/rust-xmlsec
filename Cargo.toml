@@ -1,22 +1,25 @@
 [package]
-name         = "xmlsec"
-version      = "0.2.3"
-authors      = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
-edition      = "2021"
-readme       = "README.md"
-license      = "MIT"
-description  = "Wrapper for xmlsec1 library"
-homepage     = "https://github.com/voipir/rust-xmlsec"
-repository   = "https://github.com/voipir/rust-xmlsec"
-keywords     = ["xml", "xmlsec", "dsig"]
+name = "xmlsec"
+version = "0.2.3"
+authors = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
+edition = "2021"
+readme = "README.md"
+license = "MIT"
+description = "Wrapper for xmlsec1 library"
+homepage = "https://github.com/voipir/rust-xmlsec"
+repository = "https://github.com/voipir/rust-xmlsec"
+keywords = ["xml", "xmlsec", "dsig"]
 
 build = "bindings.rs"
 
 [dependencies]
-libc        = {version = "^0.2"}
-libxml      = {version = "^0.3"}
-lazy_static = {version = "^1.4"}
+libc = { version = "^0.2" }
+libxml = { version = "^0.3" }
+lazy_static = { version = "^1.4" }
 
 [build-dependencies]
-pkg-config = {version = "^0.3"}
-bindgen    = {version = "^0.65"}
+pkg-config = { version = "^0.3" }
+bindgen = { version = "^0.71" }
+
+[target.'cfg(windows)'.build-dependencies]
+vcpkg = { version = "0.2", git = "https://github.com/mcgoo/vcpkg-rs.git", branch = "master" }
