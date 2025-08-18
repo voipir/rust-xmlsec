@@ -1,24 +1,74 @@
 //!
 //! Wrapper for XmlSec Signature Context
 //!
+
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::ffi::{c_char, c_int, c_void};
+use std::fs::File;
+use std::io::Read;
 use crate::bindings;
 
-use crate::XmlSecKey;
 use crate::XmlSecError;
+use crate::XmlSecKey;
 use crate::XmlSecResult;
 
-use crate::XmlNode;
 use crate::XmlDocument;
+use crate::XmlNode;
 
-use std::os::raw::c_uchar;
 use std::mem::forget;
+use std::os::raw::c_uchar;
+use std::path::PathBuf;
 use std::ptr::null_mut;
+use std::slice;
+use std::sync::Once;
 
+thread_local! {
+    static THREAD_URI_MAP: RefCell<HashMap<String, PathBuf>> = RefCell::new(HashMap::new());
+    static THREAD_EXECUTING: Cell<bool> = Cell::new(false);
+    static INIT_IO: Once = Once::new();
+}
+
+unsafe extern "C" fn io_match_cb(filename: *const c_char) -> c_int {
+    if filename.is_null() { return 0; }
+    let uri = std::ffi::CStr::from_ptr(filename).to_string_lossy().into_owned();
+    let matched = THREAD_URI_MAP.with(|map| map.borrow().contains_key(&uri));
+    if matched { 1 } else { 0 }
+}
+
+unsafe extern "C" fn io_open_cb(filename: *const c_char) -> *mut c_void {
+    if filename.is_null() { return null_mut(); }
+    let uri = std::ffi::CStr::from_ptr(filename).to_string_lossy().into_owned();
+    let file_opt = THREAD_URI_MAP.with(|map| {
+        map.borrow().get(&uri).cloned()
+    }).and_then(|p| File::open(p).ok());
+    match file_opt {
+        Some(f) => Box::into_raw(Box::new(f)) as *mut c_void,
+        None => null_mut(),
+    }
+}
+
+unsafe extern "C" fn io_read_cb(ctx: *mut c_void, buffer: *mut c_char, len: c_int) -> c_int {
+    if ctx.is_null() || buffer.is_null() { return -1; }
+    let file: &mut File = &mut *(ctx as *mut File);
+    let buf = slice::from_raw_parts_mut(buffer as *mut u8, len as usize);
+    match file.read(buf) {
+        Ok(n) => n as c_int,
+        Err(_) => -1,
+    }
+}
+
+unsafe extern "C" fn io_close_cb(ctx: *mut c_void) -> c_int {
+    if ctx.is_null() { return -1; }
+    drop(Box::from_raw(ctx as *mut File));
+    0
+}
 
 /// Signature signing/veryfying context
 pub struct XmlSecSignatureContext
 {
     ctx: *mut bindings::xmlSecDSigCtx,
+    uri_mapping: Option<HashMap<String, PathBuf>>,
 }
 
 
@@ -35,7 +85,7 @@ impl XmlSecSignatureContext
             panic!("Failed to create dsig context");
         }
 
-        Self {ctx}
+        Self {ctx, uri_mapping: None}
     }
 
     /// Sets the key to use for signature or verification. In case a key had
@@ -71,6 +121,11 @@ impl XmlSecSignatureContext
         }
     }
 
+    /// Maps the given URI to the defined local file paths
+    pub fn set_uri_mapping(&mut self, map: HashMap<String, PathBuf>) {
+        self.uri_mapping = Some(map);
+    }
+
     /// UNTESTED
     pub fn sign_node(&self, node: &XmlNode) -> XmlSecResult<()>
     {
@@ -94,10 +149,12 @@ impl XmlSecSignatureContext
     {
         self.key_is_set()?;
 
-        let root = find_root(doc)?;
-        let sig  = find_signode(root)?;
+        self.execute_with_mapping(|| {
+            let root = find_root(doc)?;
+            let sig = find_signode(root)?;
 
-        self.sign_node_raw(sig)
+            self.sign_node_raw(sig)
+        })
     }
 
     /// UNTESTED
@@ -124,10 +181,59 @@ impl XmlSecSignatureContext
     {
         self.key_is_set()?;
 
-        let root = find_root(doc)?;
-        let sig  = find_signode(root)?;
+        self.execute_with_mapping(|| {
+            let root = find_root(doc)?;
+            let sig  = find_signode(root)?;
 
-        self.verify_node_raw(sig)
+            self.verify_node_raw(sig)
+        })
+    }
+
+    /// Register IO-Callbacks once for the thread.
+    fn register_io_callbacks_if_needed() {
+        INIT_IO.with(|once| {
+            once.call_once(|| unsafe {
+                if bindings::xmlSecIORegisterCallbacks(
+                    Some(io_match_cb),
+                    Some(io_open_cb),
+                    Some(io_read_cb),
+                    Some(io_close_cb),
+                ) < 0 {
+                    panic!("Failed to register custom IO callbacks");
+                }
+            });
+        });
+    }
+
+    /// Helper method that executes the given action after preparing the URI map for the thread
+    fn execute_with_mapping<F, R>(&self, action: F) -> XmlSecResult<R>
+    where
+        F: FnOnce() -> XmlSecResult<R>,
+    {
+        Self::register_io_callbacks_if_needed();
+
+        THREAD_EXECUTING.with(|flag| {
+            if flag.get() {
+                return Err(XmlSecError::ParallelExecution);
+            }
+            flag.set(true);
+
+            // Set mapping in static thread constant
+            if let Some(ref map) = self.uri_mapping {
+                THREAD_URI_MAP.with(|cell| {
+                    *cell.borrow_mut() = map.clone();
+                });
+            }
+
+            let result = action();
+
+            // Reset static thread constant
+            THREAD_URI_MAP.with(|cell| {
+                cell.borrow_mut().clear();
+            });
+            flag.set(false);
+            result
+        })
     }
 
     /// # Safety
