@@ -116,7 +116,7 @@ unsafe extern "C" fn io_read_cb(ctx: *mut c_void, buffer: *mut c_char, len: c_in
 
 unsafe extern "C" fn io_close_cb(ctx: *mut c_void) -> c_int {
     if ctx.is_null() { return -1; }
-    drop(Box::from_raw(ctx as *mut File));
+    drop(Box::from_raw(ctx as *mut IoCtx));
     0
 }
 
