@@ -4,7 +4,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
-use std::ffi::{c_char, c_int, c_void};
+use std::ffi::{c_char, c_int, c_void, CStr};
 use std::fs::File;
 use std::io::Read;
 use crate::bindings;
@@ -16,7 +16,7 @@ use crate::XmlSecResult;
 use crate::XmlDocument;
 use crate::XmlNode;
 
-use std::mem::forget;
+use std::mem::{forget, MaybeUninit};
 use std::os::raw::c_uchar;
 use std::path::PathBuf;
 use std::ptr::null_mut;
@@ -24,37 +24,93 @@ use std::slice;
 use std::sync::Once;
 
 thread_local! {
-    static THREAD_URI_MAP: RefCell<HashMap<String, PathBuf>> = RefCell::new(HashMap::new());
+    static THREAD_URI_MAP: RefCell<HashMap<String, UriResource>> = RefCell::new(HashMap::new());
     static THREAD_EXECUTING: Cell<bool> = Cell::new(false);
     static INIT_IO: Once = Once::new();
 }
 
+#[derive(Clone)]
+/// Either a file path to the resource or the value itself
+pub enum UriResource {
+    /// The local file path to the resource
+    Path(PathBuf),
+    /// The value of the resource
+    Data(Vec<u8>),
+}
+
+#[repr(C)]
+struct MemCtx {
+    data: Vec<u8>,
+    offset: usize,
+}
+
+#[repr(C)]
+struct IoCtx {
+    kind: i32, // 0 = File, 1 = Memory
+    file: MaybeUninit<File>,
+    memory:  MaybeUninit<MemCtx>,
+}
+
 unsafe extern "C" fn io_match_cb(filename: *const c_char) -> c_int {
     if filename.is_null() { return 0; }
-    let uri = std::ffi::CStr::from_ptr(filename).to_string_lossy().into_owned();
+    let uri = CStr::from_ptr(filename).to_string_lossy().into_owned();
     let matched = THREAD_URI_MAP.with(|map| map.borrow().contains_key(&uri));
     if matched { 1 } else { 0 }
 }
 
 unsafe extern "C" fn io_open_cb(filename: *const c_char) -> *mut c_void {
     if filename.is_null() { return null_mut(); }
-    let uri = std::ffi::CStr::from_ptr(filename).to_string_lossy().into_owned();
-    let file_opt = THREAD_URI_MAP.with(|map| {
-        map.borrow().get(&uri).cloned()
-    }).and_then(|p| File::open(p).ok());
-    match file_opt {
-        Some(f) => Box::into_raw(Box::new(f)) as *mut c_void,
+    let uri = CStr::from_ptr(filename).to_string_lossy().into_owned();
+    let resource_opt = THREAD_URI_MAP.with(|map| map.borrow().get(&uri).cloned());
+    match resource_opt {
+        Some(UriResource::Path(p)) => {
+            match File::open(p) {
+                Ok(f) => {
+                    let file_ctx = IoCtx {
+                        kind: 0,
+                        file: MaybeUninit::new(f),
+                        memory:  MaybeUninit::uninit(),
+                    };
+                    Box::into_raw(Box::new(file_ctx)) as *mut c_void
+                },
+                Err(_) => null_mut(),
+            }
+        },
+        Some(UriResource::Data(data)) => {
+            let memory_ctx = MemCtx { data, offset: 0 };
+            let ctx = IoCtx {
+                kind: 1,
+                file: MaybeUninit::uninit(),
+                memory:  MaybeUninit::new(memory_ctx),
+            };
+            Box::into_raw(Box::new(ctx)) as *mut c_void
+        },
         None => null_mut(),
     }
 }
 
 unsafe extern "C" fn io_read_cb(ctx: *mut c_void, buffer: *mut c_char, len: c_int) -> c_int {
     if ctx.is_null() || buffer.is_null() { return -1; }
-    let file: &mut File = &mut *(ctx as *mut File);
-    let buf = slice::from_raw_parts_mut(buffer as *mut u8, len as usize);
-    match file.read(buf) {
-        Ok(n) => n as c_int,
-        Err(_) => -1,
+    let ctx = &mut *(ctx as *mut IoCtx);
+    match ctx.kind {
+        0 => {
+            let file = ctx.file.assume_init_mut();
+            let buf = slice::from_raw_parts_mut(buffer as *mut u8, len as usize);
+            match file.read(buf) {
+                Ok(n) => n as c_int,
+                Err(_) => -1,
+            }
+        }
+        1 => {
+            let mem = ctx.memory.assume_init_mut();
+            let remaining = mem.data.len() - mem.offset;
+            let to_read = remaining.min(len as usize);
+            let dst = slice::from_raw_parts_mut(buffer as *mut u8, to_read);
+            dst.copy_from_slice(&mem.data[mem.offset..mem.offset + to_read]);
+            mem.offset += to_read;
+            to_read as c_int
+        }
+        _ => -1,
     }
 }
 
@@ -68,7 +124,7 @@ unsafe extern "C" fn io_close_cb(ctx: *mut c_void) -> c_int {
 pub struct XmlSecSignatureContext
 {
     ctx: *mut bindings::xmlSecDSigCtx,
-    uri_mapping: Option<HashMap<String, PathBuf>>,
+    uri_mapping: Option<HashMap<String, UriResource>>,
 }
 
 
@@ -122,7 +178,7 @@ impl XmlSecSignatureContext
     }
 
     /// Maps the given URI to the defined local file paths
-    pub fn set_uri_mapping(&mut self, map: HashMap<String, PathBuf>) {
+    pub fn set_uri_mapping(&mut self, map: HashMap<String, UriResource>) {
         self.uri_mapping = Some(map);
     }
 

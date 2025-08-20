@@ -42,6 +42,7 @@ pub use self::error::XmlSecResult;
 pub use self::crypto::XmlSecSignatureMethod;
 
 pub use self::xmldsig::XmlSecSignatureContext;
+pub use self::xmldsig::UriResource;
 
 pub use self::templates::TemplateBuilder            as XmlSecTemplateBuilder;
 pub use self::templates::XmlDocumentTemplating      as XmlSecDocumentTemplating;
