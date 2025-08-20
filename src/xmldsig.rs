@@ -51,14 +51,14 @@ struct IoCtx {
     memory:  MaybeUninit<MemCtx>,
 }
 
-unsafe extern "C" fn io_match_cb(filename: *const c_char) -> c_int {
+unsafe extern "C" fn io_match_callback(filename: *const c_char) -> c_int {
     if filename.is_null() { return 0; }
     let uri = CStr::from_ptr(filename).to_string_lossy().into_owned();
     let matched = THREAD_URI_MAP.with(|map| map.borrow().contains_key(&uri));
     if matched { 1 } else { 0 }
 }
 
-unsafe extern "C" fn io_open_cb(filename: *const c_char) -> *mut c_void {
+unsafe extern "C" fn io_open_callback(filename: *const c_char) -> *mut c_void {
     if filename.is_null() { return null_mut(); }
     let uri = CStr::from_ptr(filename).to_string_lossy().into_owned();
     let resource_opt = THREAD_URI_MAP.with(|map| map.borrow().get(&uri).cloned());
@@ -89,7 +89,7 @@ unsafe extern "C" fn io_open_cb(filename: *const c_char) -> *mut c_void {
     }
 }
 
-unsafe extern "C" fn io_read_cb(ctx: *mut c_void, buffer: *mut c_char, len: c_int) -> c_int {
+unsafe extern "C" fn io_read_callback(ctx: *mut c_void, buffer: *mut c_char, len: c_int) -> c_int {
     if ctx.is_null() || buffer.is_null() { return -1; }
     let ctx = &mut *(ctx as *mut IoCtx);
     match ctx.kind {
@@ -114,7 +114,7 @@ unsafe extern "C" fn io_read_cb(ctx: *mut c_void, buffer: *mut c_char, len: c_in
     }
 }
 
-unsafe extern "C" fn io_close_cb(ctx: *mut c_void) -> c_int {
+unsafe extern "C" fn io_close_callback(ctx: *mut c_void) -> c_int {
     if ctx.is_null() { return -1; }
     drop(Box::from_raw(ctx as *mut IoCtx));
     0
@@ -245,17 +245,17 @@ impl XmlSecSignatureContext
         })
     }
 
-    /// Register IO-Callbacks once for the thread.
+    /// Register IO callbacks once for the current thread
     fn register_io_callbacks_if_needed() {
         INIT_IO.with(|once| {
             once.call_once(|| unsafe {
                 if bindings::xmlSecIORegisterCallbacks(
-                    Some(io_match_cb),
-                    Some(io_open_cb),
-                    Some(io_read_cb),
-                    Some(io_close_cb),
+                    Some(io_match_callback),
+                    Some(io_open_callback),
+                    Some(io_read_callback),
+                    Some(io_close_callback),
                 ) < 0 {
-                    panic!("Failed to register custom IO callbacks");
+                    panic!("Failed to register IO callbacks");
                 }
             });
         });

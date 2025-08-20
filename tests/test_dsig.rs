@@ -1,7 +1,12 @@
 //!
 //! Unit Tests for DSig Context
 //!
-use xmlsec::XmlSecKey;
+
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+use xmlsec::{UriResource, XmlSecKey};
 use xmlsec::XmlSecKeyFormat;
 use xmlsec::XmlSecSignatureContext;
 use xmlsec::XmlSecDocumentExt;
@@ -58,6 +63,70 @@ fn test_signing_template()
     ).unwrap();
 
     assert_eq!(doc.to_string(), reference);
+}
+
+#[test]
+fn test_signing_template_with_uri_file_mapping()
+{
+    let mut ctx = common_setup_context_and_key();
+    ctx.set_uri_mapping({
+        let mut map = HashMap::new();
+        map.insert(
+            "data.json".to_string(),
+            UriResource::Path(PathBuf::from("tests/resources/data.json")),
+        );
+        map
+    });
+
+    let doc = XmlParser::default()
+        .parse_file("tests/resources/sign4-tmpl.xml")
+        .expect("Failed to load signature template");
+
+    if let Err(e) = ctx.sign_document(&doc) {
+        panic!("{}", e);
+    }
+
+    // compare signature results
+    let reference = String::from_utf8(
+        include_bytes!("./resources/sign4-signed.xml").to_vec()
+    ).unwrap();
+
+    let signed_doc = doc.to_string();
+
+    assert_eq!(signed_doc, reference);
+}
+
+#[test]
+fn test_signing_template_with_uri_memory_mapping()
+{
+    let mut ctx = common_setup_context_and_key();
+    ctx.set_uri_mapping({
+        let mut map = HashMap::new();
+        map.insert(
+            "data.json".to_string(),
+            UriResource::Data(r#"{
+  "some": "additional file"
+}"#.as_bytes().to_vec()),
+        );
+        map
+    });
+
+    let doc = XmlParser::default()
+        .parse_file("tests/resources/sign4-tmpl.xml")
+        .expect("Failed to load signature template");
+
+    if let Err(e) = ctx.sign_document(&doc) {
+        panic!("{}", e);
+    }
+
+    // compare signature results
+    let reference = String::from_utf8(
+        include_bytes!("./resources/sign4-signed.xml").to_vec()
+    ).unwrap();
+
+    let signed_doc = doc.to_string();
+
+    assert_eq!(signed_doc, reference);
 }
 
 
