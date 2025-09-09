@@ -23,6 +23,8 @@ pub enum XmlSecError
 
     SigningError,
     VerifyError,
+
+    ParallelExecution,
 }
 
 
@@ -42,6 +44,8 @@ impl std::fmt::Display for XmlSecError
 
             Self::SigningError => write!(fmt, "An error has ocurred while attemting to sign document"),
             Self::VerifyError  => write!(fmt, "Verification process failed"),
+
+            Self::ParallelExecution => write!(fmt, "Only one signing or verifying request can run in parallel per thread."),
         }
     }
 }

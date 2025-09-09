@@ -9,3 +9,4 @@
 #include <xmlsec/xmldsig.h>
 #include <xmlsec/xmlsec.h>
 #include <xmlsec/xmltree.h>
+#include <xmlsec/io.h>
