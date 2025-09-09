@@ -19,6 +19,7 @@ use std::ffi::CString;
 /// x509 key format.
 #[allow(missing_docs)]
 #[repr(u32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum XmlSecKeyFormat
 {
     Unknown  = bindings::xmlSecKeyDataFormat_xmlSecKeyDataFormatUnknown,
