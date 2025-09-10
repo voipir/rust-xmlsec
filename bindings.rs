@@ -154,7 +154,7 @@ fn detect_transform(symbol: &str, cfg_name: &str) {
         Ok(status) if status.success() => {
             println!("cargo:rustc-cfg={}", cfg_name);
         }
-        Ok(status) => {
+        Ok(_) => {
             println!("cargo:warning=Probe for {} failed", cfg_name);
         }
         Err(e) => {
