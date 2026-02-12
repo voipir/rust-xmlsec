@@ -1,8 +1,8 @@
 [package]
 name         = "xmlsec"
-version      = "0.2.3"
+version      = "0.3.0"
 authors      = ["Leonhard Weber <leonhard.weber@voipir.cl>"]
-edition      = "2021"
+edition      = "2024"
 readme       = "README.md"
 license      = "MIT"
 description  = "Wrapper for xmlsec1 library"
@@ -13,10 +13,10 @@ keywords     = ["xml", "xmlsec", "dsig"]
 build = "bindings.rs"
 
 [dependencies]
-libc        = {version = "^0.2"}
-libxml      = {version = "^0.3"}
-lazy_static = {version = "^1.4"}
+libc        = {version="0.2.181"}
+libxml      = {version="0.3.8"}
+lazy_static = {version="1.5.0"}
 
 [build-dependencies]
-pkg-config = {version = "^0.3"}
-bindgen    = {version = "^0.65"}
+pkg-config = {version="0.3.32"}
+bindgen    = {version="0.72.1"}

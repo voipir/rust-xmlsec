@@ -8,6 +8,7 @@
 #![allow(non_upper_case_globals)]
 
 #![allow(improper_ctypes)]
+#![allow(unnecessary_transmutes)]
 
 #![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::redundant_static_lifetimes)]
