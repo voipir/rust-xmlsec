@@ -45,3 +45,19 @@ fn test_key_name_handing()
 
     assert_eq!(name, "testname");
 }
+
+#[test]
+fn encrypted_key_loading_from_memory()
+{
+    let pem = include_bytes!("resources/key-encrypted.pem");
+    assert!(XmlSecKey::from_memory(pem, XmlSecKeyFormat::Pem, Some("xmlsec-test-password")).is_ok());
+    assert!(XmlSecKey::from_memory(pem, XmlSecKeyFormat::Pem, Some("incorrect-password")).is_err());
+}
+
+#[test]
+fn encrypted_key_loading_from_file()
+{
+    let path = "tests/resources/key-encrypted.pem";
+    assert!(XmlSecKey::from_file(path, XmlSecKeyFormat::Pem, Some("xmlsec-test-password")).is_ok());
+    assert!(XmlSecKey::from_file(path, XmlSecKeyFormat::Pem, Some("incorrect-password")).is_err());
+}
